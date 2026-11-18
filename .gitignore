@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environments
+.venv/
+venv/
+.env
+
+# Outputs, data and checkpoints
+/work_dirs/
+/outputs/
+/data/
+/checkpoints/
+/wandb/
+*.safetensors
+*.pt
+*.pth
+*.ckpt
+*.zarr/
+*.hdf5
+*.npz
+!resources/**/*.npz
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store

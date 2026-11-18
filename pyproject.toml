@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tacinno"
+version = "1.0.0"
+description = "TacInno: Teaching Vision-Language-Action Models the Contact Dynamics Beyond Vision and Action"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+dynamic = ["dependencies", "optional-dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements/runtime.txt"] }
+optional-dependencies = { tests = { file = ["requirements/tests.txt"] } }
+
+[tool.setuptools.packages.find]
+include = ["tacinno*"]
+
+[tool.setuptools.package-data]
+tacinno = ["datasets/stats/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["third_party"]

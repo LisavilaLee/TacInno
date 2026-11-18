@@ -1,0 +1,112 @@
+# Evaluation in UniVTAC
+
+TacInno-VLA is evaluated with the benchmark's own evaluator, `scripts/eval_policy.py` of
+[UniVTAC](https://github.com/univtac/UniVTAC). The evaluator instantiates the TacInno-VLA client
+(`tacinno/evaluation/univtac_client.py`), which queries a policy server over a websocket.
+
+```
+ UniVTAC (Isaac Sim)                                   GPU machine
+ ┌──────────────────────────────┐   observation       ┌───────────────────────────┐
+ │ scripts/eval_policy.py        │ ──────────────────▶ │ tools/serve_policy.py      │
+ │   policy/TacInnoVLA (client)  │ ◀────────────────── │   TacInno-VLA (one task)   │
+ └──────────────────────────────┘   action chunk      └───────────────────────────┘
+```
+
+## Protocol of the paper
+
+| Setting | Value |
+|:--|:--|
+| Seeds | 1000000 to 1000099, identical for every policy (100 episodes per task) |
+| Action limit | twice the benchmark default (`UNIVTAC_STEP_LIM_SCALE=2`) |
+| Errors | episodes that raise (simulator or planning errors) are skipped and filled up with the next seed |
+| Repeated seeds | if a seed is evaluated more than once, the first finished result counts |
+| Action execution horizon | rows 1 to 31 of the 32-step chunk (Insert Hole, Insert Tube, Pull-out Key, Put Bottle); rows 1 to 10 (Lift Can, Lift Bottle) |
+| Cameras | head and wrist; the Put Bottle checkpoint uses the head camera only (the server ignores the wrist image) |
+| Paired comparisons | exact two-sided McNemar test on the seeds both policies completed |
+
+## Step by step
+
+**1. Install the client** into the UniVTAC checkout (once):
+
+```bash
+python tools/eval_univtac.py install --univtac-root /path/to/UniVTAC
+```
+
+This writes `policy/TacInnoVLA/` (client, `__init__.py`, `deploy_<task>.yml` and `deploy_<task>_tactile_off.yml`
+for the six tasks) and applies `tools/univtac/eval_policy_protocol.patch`. The patch keeps the episode loop, seeds
+and success checks of the benchmark; it only adds a per-episode record (`episodes.json` in the run directory), the
+optional action-limit scale and a headless switch (`UNIVTAC_LIVESTREAM=0`).
+
+**2. Start the policy server** for the task on a GPU machine:
+
+```bash
+python tools/serve_policy.py checkpoints/sim/lift_can --task lift_can:8000 --bind 0.0.0.0
+# Put Bottle reads the head camera only; its training config sets that:
+python tools/serve_policy.py checkpoints/sim/put_bottle_in_shelf --task put_bottle_in_shelf:8000 --bind 0.0.0.0 \
+    --config configs/tacinno_vla/tacinno-vla_pi05_20k-headcam_univtac-put-bottle.py
+```
+
+The server binds to `127.0.0.1` unless `--bind` is given. The joint and tactile statistics of the released models
+are bundled in `tacinno/datasets/stats/` and used by default; `--cond-stats` and `--tactile-stats` select other
+files. On connect the server reports the task, the checkpoint and the tactile history it expects; the client checks
+them before the first episode.
+
+**3. Evaluate** 100 seeds with twice the default action limit:
+
+```bash
+python tools/eval_univtac.py run --univtac-root /path/to/UniVTAC --task lift_can --host <server> --port 8000
+```
+
+`--episodes`, `--start-seed` and `--time-limit-scale` change the protocol; arguments after `--` are passed to
+`eval_policy.py`. Results go to `eval_result/TacInnoVLA/<task>/deploy_<task>/<time>/` of the UniVTAC checkout
+(`episodes.json`, logs, and the benchmark's videos).
+
+**4. Summarize.** Several run directories of the same policy can be merged (for example when the 100 seeds are split
+over several simulator processes):
+
+```bash
+python tools/eval_univtac.py summarize /path/to/UniVTAC/eval_result/TacInnoVLA/lift_can/deploy_lift_can
+# seeds 1000000-1000099: success 88/100 = 88.0%
+```
+
+## Tactile-off test
+
+The tactile-off test replaces the tactile input with a fixed no-contact frame at test time while every other input
+stays live, so any change of the success rate is attributable to tactile input.
+
+```bash
+python tools/eval_univtac.py run --univtac-root /path/to/UniVTAC --task lift_can --host <server> --port 8000 --tactile-off
+python tools/analysis/mcnemar.py \
+    --a /path/to/UniVTAC/eval_result/TacInnoVLA/lift_can/deploy_lift_can \
+    --b /path/to/UniVTAC/eval_result/TacInnoVLA/lift_can/deploy_lift_can_tactile_off
+```
+
+By default the client freezes the first tactile frame of each episode, which has no contact for tasks that start with
+an open gripper. For a task that starts in contact, record a no-contact frame (`l_depth`, `l_marker`, `r_depth`,
+`r_marker` arrays of one step) into an `.npz` and set `no_contact_frame:` in `deploy_<task>_tactile_off.yml`.
+
+## Client reference
+
+The client is self-contained (NumPy, OpenCV, PyTorch, `websockets`, `msgpack`) so that it runs inside the simulator
+environment without installing `tacinno`. Its module docstring documents the wire protocol. The main classes:
+
+| Class | Role |
+|:--|:--|
+| `PolicyServerClient` | websocket connection, metadata checks (task, optional `expect_checkpoint`), reconnects |
+| `TacInnoVLAPolicy` | UniVTAC policy: keeps the joint and tactile histories, executes action chunks |
+| `TactileOff` | tactile-off test wrapper |
+| `Policy(args)` | factory called by the evaluator with the deploy config |
+
+The deploy config keys are `host`, `port` (overridable with `TACINNO_HOST` and `TACINNO_PORT`), `replan`,
+`expect_checkpoint`, `tactile_off` and `no_contact_frame`.
+
+## Statistics in Python
+
+```python
+from tacinno.evaluation import PAPER_SEEDS, compare, first_results, success_rate
+
+ours = first_results(["eval_result/TacInnoVLA/lift_can/deploy_lift_can"], PAPER_SEEDS)
+off = first_results(["eval_result/TacInnoVLA/lift_can/deploy_lift_can_tactile_off"], PAPER_SEEDS)
+print(success_rate(ours, PAPER_SEEDS))  # {'success': ..., 'valid': ..., 'rate': ..., 'missing': [...]}
+print(compare(ours, off, PAPER_SEEDS))   # paired seeds, discordant counts, exact McNemar p-value
+```

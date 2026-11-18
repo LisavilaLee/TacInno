@@ -1,0 +1,45 @@
+TacInno
+Copyright 2026 The TacInno Authors
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE), and includes or adapts
+third-party software listed below. Each component keeps its original license.
+
+--------------------------------------------------------------------------------
+openpi (Physical Intelligence)
+https://github.com/Physical-Intelligence/openpi
+License: Apache License 2.0
+
+third_party/openpi contains a trimmed and modified copy of the PyTorch implementation of pi0.5 from openpi, including
+the files that replace parts of Hugging Face transformers (PaliGemma, Gemma, SigLIP). The modifications are listed in
+third_party/openpi/MODIFICATIONS.md. tacinno/evaluation/msgpack_numpy.py is copied from openpi-client without
+functional changes.
+
+--------------------------------------------------------------------------------
+FTP-1: A Generalist Foundation Tactile Policy Across Tactile Sensors for Contact-Rich Manipulation
+https://arxiv.org/abs/2606.13102
+https://github.com/michaelyuancb/ftp1-policy
+License: Apache License 2.0
+
+The training and data-loading code of TacInno-VLA started from the openpi-based training code of FTP-1. See
+third_party/openpi/MODIFICATIONS.md for the files concerned.
+
+--------------------------------------------------------------------------------
+UniVTAC
+https://github.com/univtac/UniVTAC
+License: MIT
+
+tools/univtac/eval_policy_protocol.patch modifies the benchmark's scripts/eval_policy.py and contains context lines
+from it. tacinno/evaluation/univtac_client.py implements the benchmark's policy interface. No other UniVTAC code is
+included.
+
+--------------------------------------------------------------------------------
+Hugging Face transformers
+https://github.com/huggingface/transformers
+License: Apache License 2.0 (files under third_party/openpi/.../transformers_replace are modified copies)
+
+--------------------------------------------------------------------------------
+Model weights
+
+TacInno-VLA checkpoints are fine-tuned from pi0.5 (Physical Intelligence) and its PaliGemma components; their use is
+subject to the licenses of those base models, including the Gemma Terms of Use. The TacInno tokenizer uses image
+features of DINOv2 (facebook/dinov2-base, Apache License 2.0), which are not redistributed here.

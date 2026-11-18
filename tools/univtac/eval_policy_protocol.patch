@@ -1,0 +1,70 @@
+--- a/scripts/eval_policy.py
++++ b/scripts/eval_policy.py
+@@ -4,6 +4,7 @@
+ sys.path.append(".")
+ sys.path.append(f"./policy")
+ 
++import os
+ import time
+ import json
+ import yaml
+@@ -62,7 +63,8 @@
+ # parse the arguments
+ args_cli = parser.parse_args()
+ args_cli.enable_cameras = True
+-args_cli.livestream = 2
++# TacInno protocol: UNIVTAC_LIVESTREAM=0 runs headless without the WebRTC stream (default unchanged)
++args_cli.livestream = int(os.environ.get('UNIVTAC_LIVESTREAM', '2'))
+ args_cli.num_envs = 1
+ 
+ # launch omniverse app, must done before importing anything from omni.isaac
+@@ -91,6 +93,8 @@
+     start_seed, max_seed, test_total_num, instructions, instruciton_type:Literal['seen', 'unseen']='seen'
+ ):
+     test_num, succ_num, seed = 0, 0, start_seed
++    # TacInno protocol: one record per episode in <run dir>/episodes.json (errors are skipped and filled up)
++    episodes = []
+ 
+     seed_path = task.save_root.parent / 'seeds.json'
+     seed_path.parent.mkdir(parents=True, exist_ok=True)
+@@ -151,6 +155,7 @@
+             succ_status = 'error'
+             task.clean_cache(result=succ_status)
+             test_num -= 1
++            episodes.append({'seed': seed, 'result': 'error', 'error': str(e), 'finished_at': time.time()})
+         else:
+             eval_cost = time.perf_counter() - eval_start
+             
+@@ -162,12 +167,17 @@
+                 f"steps: {task.step_count:<5d}, actions: {task.take_action_cnt:<5d}.\n"
+                 f"Instruction: {task.instruction}\n"
+                 f"Total {succ_num}/{test_num}({succ_num/test_num*100:.2f}%) success.")
++            episodes.append({'seed': seed, 'result': succ_status, 'seconds': eval_cost, 'steps': task.step_count,
++                             'actions': task.take_action_cnt, 'step_lim': int(task.cfg.step_lim),
++                             'finished_at': time.time()})
+         finally:
+             seed += 1
++            (task.save_root / 'episodes.json').write_text(json.dumps(episodes, indent=2))
+     
+     return {
+         'test_num': test_num,
+-        'succ_num': succ_num
++        'succ_num': succ_num,
++        'episodes': episodes
+     }
+ 
+ def get_config(file, default_root:Path, type:Literal['yaml', 'json']):
+@@ -248,6 +258,13 @@
+     log(f"Eval Config: {json.dumps(deploy_config, ensure_ascii=False, indent=4)}\n{'-' * 20}\n") 
+     log(f"Task init finish in {task_init_cost:.2f} seconds.")
+     log(f"Policy init finish in {policy_init_cost:.2f} seconds.")
++    # TacInno protocol: optional scale of the action limit (UNIVTAC_STEP_LIM_SCALE=2 in the paper). The limit is
++    # read by the episode loop and by BaseTask.take_action, so scaling it here applies to both.
++    step_lim_scale = float(os.environ.get('UNIVTAC_STEP_LIM_SCALE', '1'))
++    if step_lim_scale != 1.0:
++        step_lim_orig = int(task.cfg.step_lim)
++        task.cfg.step_lim = int(round(step_lim_orig * step_lim_scale))
++        log(f'Action limit scaled by {step_lim_scale}: {step_lim_orig} -> {task.cfg.step_lim}')
+ 
+     results = eval_policy(
+         task=task, policy=policy,
