@@ -8,7 +8,7 @@ and, under ``cond``, the condition inputs and targets of :class:`tacinno.dataset
     from tacinno.config import Config
     from tacinno.registry import DATASETS
     import tacinno.datasets.policy_dataset  # registers the builder
-    cfg = Config.fromfile("configs/tacinno_vla/tacinno-vla_pi05_20k_univtac-insert-tube.py")
+    cfg = Config.fromfile("configs/tacinno_vla/tacinno-vla_univtac-insert-tube.py")
     dataset = DATASETS.build(dict(type="TacInnoPolicyDataset", cfg=cfg))
     sample = dataset[0]          # dict: image, image_mask, state, actions, tokenized_prompt, ..., cond
 """

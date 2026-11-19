@@ -88,7 +88,7 @@ Every tool takes a config file and optional overrides, as in MMDetection:
 
 ```bash
 python tools/train_tokenizer.py configs/tokenizer/tacinno-tokenizer_univtac-6task.py --work-dir work_dirs/tokenizer
-python tools/train_policy.py configs/tacinno_vla/tacinno-vla_pi05_20k_univtac-insert-tube.py \
+python tools/train_policy.py configs/tacinno_vla/tacinno-vla_univtac-insert-tube.py \
     --cfg-options data.data_root=/path/to/data
 ```
 

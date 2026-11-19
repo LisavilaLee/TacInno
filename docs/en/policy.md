@@ -83,7 +83,7 @@ the released weights are the EMA weights of the last step.
 
 ```bash
 # one node, N GPUs (the global batch stays 64)
-bash tools/dist_train.sh configs/tacinno_vla/tacinno-vla_pi05_20k_univtac-insert-tube.py 2
+bash tools/dist_train.sh configs/tacinno_vla/tacinno-vla_univtac-insert-tube.py 2
 # override any key
 python tools/train_policy.py CONFIG --cfg-options schedule.num_steps=1000 data.data_root=/path/to/univtac
 ```

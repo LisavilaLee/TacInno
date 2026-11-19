@@ -26,14 +26,14 @@ sys.path.insert(0, ROOT)
 
 # training config of the released checkpoint of each UniVTAC task (used when --config is not given)
 RELEASED_CONFIGS = {
-    "insert_hole": "tacinno-vla_pi05_ft-17k-noproprio_univtac-insert-hole.py",
-    "insert_tube": "tacinno-vla_pi05_20k_univtac-insert-tube.py",
-    "lift_bottle": "tacinno-vla_pi05_20k_univtac-lift-bottle.py",
-    "lift_can": "tacinno-vla_pi05_ft-17k_univtac-lift-can.py",
-    "pull_out_key": "tacinno-vla_pi05_20k_univtac-pull-out-key.py",
-    "put_bottle_in_shelf": "tacinno-vla_pi05_20k-headcam_univtac-put-bottle.py",
+    "insert_hole": "tacinno-vla_univtac-insert-hole.py",
+    "insert_tube": "tacinno-vla_univtac-insert-tube.py",
+    "lift_bottle": "tacinno-vla_univtac-lift-bottle.py",
+    "lift_can": "tacinno-vla_univtac-lift-can.py",
+    "pull_out_key": "tacinno-vla_univtac-pull-out-key.py",
+    "put_bottle_in_shelf": "tacinno-vla_univtac-put-bottle.py",
 }
-REAL_ROBOT_CONFIG = osp.join("real_robot", "tacinno-vla_pi05_20k_real-4task.py")
+REAL_ROBOT_CONFIG = osp.join("real_robot", "tacinno-vla_real-4task.py")
 
 
 def default_config(task: str, real_robot: bool):

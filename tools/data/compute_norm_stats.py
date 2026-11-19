@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Compute the per-task normalization statistics of a TacInno-VLA config (z-score of state and action per task).
 
-    python tools/data/compute_norm_stats.py configs/tacinno_vla/tacinno-vla_pi05_joint-17k_univtac-6task.py
+    python tools/data/compute_norm_stats.py configs/tacinno_vla/init/tacinno-vla_univtac-lift-can_init.py
 
 Writes ``<data_root>/<norm_root>/<repo_id>/`` (one folder per task with ``independent_norm_stats_all_t0_zscore.json``
 and ``train_val_split.json``, plus ``norm_params_snapshot.json``). The released models use the statistics of the

@@ -224,7 +224,7 @@ the other configs in [`configs/tokenizer/`](configs/tokenizer).
 ```bash
 python tools/data/make_cond.py --tactile-export data/univtac/tactile --out data/univtac/cond
 python tools/data/make_code_targets.py data/univtac/codes data/univtac/cond
-python tools/data/compute_norm_stats.py configs/tacinno_vla/tacinno-vla_pi05_joint-17k_univtac-6task.py
+python tools/data/compute_norm_stats.py configs/tacinno_vla/init/tacinno-vla_univtac-lift-can_init.py
 ```
 
 ### 6. Train TacInno-VLA
@@ -233,7 +233,7 @@ The training configs are in [`configs/tacinno_vla/`](configs/tacinno_vla).
 
 ```bash
 # one node, N GPUs; the global batch stays 64
-bash tools/dist_train.sh configs/tacinno_vla/tacinno-vla_pi05_20k_univtac-insert-tube.py 2
+bash tools/dist_train.sh configs/tacinno_vla/tacinno-vla_univtac-insert-tube.py 2
 
 # override any key of a config
 python tools/train_policy.py CONFIG --cfg-options data.data_root=/path/to/univtac \
@@ -279,7 +279,7 @@ of the 63 markers. The server replies with a chunk of 32 steps of arm joint offs
 
 The request format, the tactile processing for the Xense sensor and the tactile-off test on the robot are in
 [docs/en/real_robot.md](docs/en/real_robot.md). To train on your own robot data, follow the real-robot section of
-[docs/en/data_preparation.md](docs/en/data_preparation.md) with `configs/real_robot/tacinno-vla_pi05_20k_real-4task.py`.
+[docs/en/data_preparation.md](docs/en/data_preparation.md) with `configs/real_robot/tacinno-vla_real-4task.py`.
 
 ## Hardware
 

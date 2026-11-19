@@ -1,5 +1,4 @@
-# Put Bottle (released checkpoint put_bottle_in_shelf/ema_19999): as the single-task recipe, but trained and deployed
-# with the head camera only (the benchmark's camera setting for this task).
+# TacInno-VLA on Put Bottle in Shelf (released checkpoint sim/put_bottle_in_shelf).
 _base_ = ["../_base_/models/tacinno_vla_pi05.py", "../_base_/datasets/univtac_6task.py",
           "../_base_/schedules/single_task_20k.py", "../_base_/policy_runtime.py"]
 model = dict(proprio_history=0)

@@ -28,21 +28,22 @@ SINGLE = dict(num_train_steps=20000, warmup_steps=500, peak_lr=5e-5, decay_lr=5e
 JOINT = dict(num_train_steps=17000, warmup_steps=500, peak_lr=5e-5, decay_lr=5e-6)
 # config -> (proprio tokens, lambdas, schedule, tasks, init type, EMA)
 RECIPES = {
-    "tacinno_vla/tacinno-vla_pi05_joint-17k_univtac-6task.py": (8, JOINT_LAMBDA, JOINT, 6, "pi05_base", 0.0),
-    "tacinno_vla/tacinno-vla_pi05_joint-17k-noproprio_univtac-6task.py": (0, JOINT_LAMBDA, JOINT, 6, "pi05_base", 0.0),
-    "tacinno_vla/tacinno-vla_pi05_ft-17k_univtac-lift-can.py": (8, TASK_LAMBDA, FT, ["lift_can"], "checkpoint", 0.99),
-    "tacinno_vla/tacinno-vla_pi05_ft-17k-noproprio_univtac-insert-hole.py": (0, TASK_LAMBDA, FT, ["insert_hole"], "checkpoint", 0.99),
-    "tacinno_vla/tacinno-vla_pi05_20k_univtac-insert-tube.py": (0, TASK_LAMBDA, SINGLE, ["insert_tube"], "pi05_base", 0.99),
-    "tacinno_vla/tacinno-vla_pi05_20k_univtac-lift-bottle.py": (0, TASK_LAMBDA, SINGLE, ["lift_bottle"], "pi05_base", 0.99),
-    "tacinno_vla/tacinno-vla_pi05_20k_univtac-pull-out-key.py": (0, TASK_LAMBDA, SINGLE, ["pull_out_key"], "pi05_base", 0.99),
-    "tacinno_vla/tacinno-vla_pi05_20k-headcam_univtac-put-bottle.py": (0, TASK_LAMBDA, SINGLE, ["put_bottle_in_shelf"], "pi05_base", 0.99),
-    "real_robot/tacinno-vla_pi05_20k_real-4task.py": (
+    "tacinno_vla/init/tacinno-vla_univtac-lift-can_init.py": (8, JOINT_LAMBDA, JOINT, 6, "pi05_base", 0.0),
+    "tacinno_vla/init/tacinno-vla_univtac-insert-hole_init.py": (0, JOINT_LAMBDA, JOINT, 6, "pi05_base", 0.0),
+    "tacinno_vla/tacinno-vla_univtac-lift-can.py": (8, TASK_LAMBDA, FT, ["lift_can"], "checkpoint", 0.99),
+    "tacinno_vla/tacinno-vla_univtac-insert-hole.py": (0, TASK_LAMBDA, FT, ["insert_hole"], "checkpoint", 0.99),
+    "tacinno_vla/tacinno-vla_univtac-insert-tube.py": (0, TASK_LAMBDA, SINGLE, ["insert_tube"], "pi05_base", 0.99),
+    "tacinno_vla/tacinno-vla_univtac-lift-bottle.py": (0, TASK_LAMBDA, SINGLE, ["lift_bottle"], "pi05_base", 0.99),
+    "tacinno_vla/tacinno-vla_univtac-pull-out-key.py": (0, TASK_LAMBDA, SINGLE, ["pull_out_key"], "pi05_base", 0.99),
+    "tacinno_vla/tacinno-vla_univtac-put-bottle.py": (0, TASK_LAMBDA, SINGLE, ["put_bottle_in_shelf"], "pi05_base", 0.99),
+    "real_robot/tacinno-vla_real-4task.py": (
         0, dict(cond_code_ce_weight=0.11798233046789909, cond_tac_aux_weight=0.40614703135347074), SINGLE, 4, "pi05_base", 0.99),
 }
 
 
 def test_every_policy_config_is_covered():
-    found = {osp.relpath(p, CFG) for d in ("tacinno_vla", "real_robot") for p in glob.glob(osp.join(CFG, d, "*.py"))}
+    found = {osp.relpath(p, CFG) for d in ("tacinno_vla", "real_robot")
+             for p in glob.glob(osp.join(CFG, d, "**", "*.py"), recursive=True)}
     assert found == set(RECIPES)
 
 
@@ -78,7 +79,7 @@ def test_recipe(name, tmp_path):
 
 
 def test_put_bottle_uses_head_camera_only():
-    cfg = Config.fromfile(osp.join(CFG, "tacinno_vla/tacinno-vla_pi05_20k-headcam_univtac-put-bottle.py"))
+    cfg = Config.fromfile(osp.join(CFG, "tacinno_vla/tacinno-vla_univtac-put-bottle.py"))
     assert tuple(cfg.deploy["cameras"]) == ("head",) and cfg.data["zarr_dir"].startswith("head_cam")
 
 

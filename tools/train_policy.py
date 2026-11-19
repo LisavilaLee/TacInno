@@ -2,9 +2,9 @@
 """Train TacInno-VLA.
 
     # one GPU
-    python tools/train_policy.py configs/tacinno_vla/tacinno-vla_pi05_20k_univtac-insert-tube.py
+    python tools/train_policy.py configs/tacinno_vla/tacinno-vla_univtac-insert-tube.py
     # N GPUs (global batch stays schedule.batch_size)
-    bash tools/dist_train.sh configs/tacinno_vla/tacinno-vla_pi05_20k_univtac-insert-tube.py 2
+    bash tools/dist_train.sh configs/tacinno_vla/tacinno-vla_univtac-insert-tube.py 2
 
 The run resumes automatically from the newest complete checkpoint in the work directory (``--no-resume`` to refuse).
 """

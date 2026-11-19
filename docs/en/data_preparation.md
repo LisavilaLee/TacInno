@@ -77,7 +77,7 @@ Adds `code_tgt.npy` (the code of the window t .. t+15 of every frame) and `code_
 ## 6. Normalization statistics
 
 ```bash
-python tools/data/compute_norm_stats.py configs/tacinno_vla/tacinno-vla_pi05_joint-17k_univtac-6task.py
+python tools/data/compute_norm_stats.py configs/tacinno_vla/init/tacinno-vla_univtac-lift-can_init.py
 ```
 
 z-score statistics of the state and the action per task (`norm/univtac_6task/UniVTAC_<task>/`). Every UniVTAC
@@ -87,6 +87,6 @@ config uses this six-task folder, so it is computed once. The released checkpoin
 ## Real robot
 
 The real-robot data (Franka FR3, one Xense gel, 10 Hz, four tasks) follows the same steps with
-`configs/real_robot/tacinno-vla_pi05_20k_real-4task.py` (`data.data_root = data/real_robot`, domain prefix `Real_`); the
+`configs/real_robot/tacinno-vla_real-4task.py` (`data.data_root = data/real_robot`, domain prefix `Real_`); the
 tactile frames are pre-processed on the robot workstation into the same indentation field and marker arrays, and the
 right-gel input is a copy of the left gel. See [real_robot.md](real_robot.md).
