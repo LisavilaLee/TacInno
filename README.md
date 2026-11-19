@@ -5,6 +5,20 @@
 <h3>Teaching Vision-Language-Action Models the Contact Dynamics Beyond Vision and Action</h3>
 
 <p>
+  Weile Li<sup>1,2</sup> &nbsp;·&nbsp; Yunfan Lou<sup>3</sup> &nbsp;·&nbsp; Muqing Shi<sup>4</sup> &nbsp;·&nbsp; Zihao Zhang<sup>2</sup> &nbsp;·&nbsp;
+  Zhenbiao Huang<sup>5</sup> &nbsp;·&nbsp; Boxian Yao<sup>6</sup> &nbsp;·&nbsp; Xiyu Zhu<sup>6</sup> &nbsp;·&nbsp; Zhibo Pang<sup>6</sup>
+</p>
+
+<p><sub>
+  <sup>1</sup>ShanghaiTech University &nbsp;
+  <sup>2</sup>Institute of AI for Industries (IAII), Chinese Academy of Sciences &nbsp;
+  <sup>3</sup>National University of Singapore<br>
+  <sup>4</sup>Washington University in St. Louis &nbsp;
+  <sup>5</sup>Beijing FiveAges Technology &nbsp;
+  <sup>6</sup>Peking University
+</sub></p>
+
+<p>
   <a href="https://tacinno.github.io"><img src="https://img.shields.io/badge/project-page-2c5f7a" alt="project page"></a>
   <a href="#citation"><img src="https://img.shields.io/badge/arXiv-coming%20soon-b31b1b?logo=arxiv&logoColor=white" alt="arXiv"></a>
   <a href="docs/en/model_zoo.md"><img src="https://img.shields.io/badge/weights-coming%20soon-624aff" alt="weights"></a>
