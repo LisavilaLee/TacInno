@@ -1,18 +1,17 @@
 # Model zoo
 
-All checkpoints and the demonstrations are hosted on ModelScope and will be public together with the paper
-(links coming soon).
+The checkpoints are hosted on Hugging Face and the demonstrations on ModelScope.
 
 | Repository | Content | Size |
 |:--|:--|:--|
-| `TacInnoWeights/TacInno-VLA` (coming soon) | TacInno-VLA policies and TacInno tokenizers | about 53 GB |
-| `TacInnoWeights/TacInno-UniVTAC-Demos` (coming soon) | UniVTAC demonstrations, 100 per task (HDF5) | about 112 GB |
+| [`Lisavila/TacInno-VLA`](https://huggingface.co/Lisavila/TacInno-VLA) (Hugging Face) | TacInno-VLA policies and TacInno tokenizers | about 53 GB |
+| `TacInnoWeights/TacInno-UniVTAC-Demos` (ModelScope, coming soon) | UniVTAC demonstrations, 100 per task (HDF5) | about 112 GB |
 
-Download a single checkpoint with the ModelScope CLI, for example:
+Download a single checkpoint with the Hugging Face CLI, for example:
 
 ```bash
-pip install modelscope
-modelscope download --model TacInnoWeights/TacInno-VLA --include "sim/lift_can/*" --local_dir checkpoints
+pip install -U huggingface_hub
+hf download Lisavila/TacInno-VLA --include "sim/lift_can/*" --local-dir checkpoints
 ```
 
 ## TacInno-VLA, simulation (UniVTAC)

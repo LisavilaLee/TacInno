@@ -5,23 +5,23 @@
 <h3>Teaching Vision-Language-Action Models the Contact Dynamics Beyond Vision and Action</h3>
 
 <p>
-  Weile Li<sup>1,2</sup> &nbsp;·&nbsp; Yunfan Lou<sup>3</sup> &nbsp;·&nbsp; Muqing Shi<sup>4</sup> &nbsp;·&nbsp; Zihao Zhang<sup>2</sup> &nbsp;·&nbsp;
-  Zhenbiao Huang<sup>5</sup> &nbsp;·&nbsp; Boxian Yao<sup>6</sup> &nbsp;·&nbsp; Xiyu Zhu<sup>6</sup> &nbsp;·&nbsp; Zhibo Pang<sup>6</sup>
+  Weile Li<sup>1,2*</sup> &nbsp;·&nbsp; Yunfan Lou<sup>3*</sup> &nbsp;·&nbsp; Muqing Shi<sup>4*</sup> &nbsp;·&nbsp; Zihao Zhang<sup>2</sup> &nbsp;·&nbsp;
+  Zhenbiao Huang<sup>5</sup> &nbsp;·&nbsp; Boxian Yao<sup>3</sup> &nbsp;·&nbsp; Xiyu Zhu<sup>3</sup> &nbsp;·&nbsp; Zhibo Pang<sup>3&dagger;</sup>
 </p>
 
 <p><sub>
   <sup>1</sup>ShanghaiTech University &nbsp;
-  <sup>2</sup>Institute of AI for Industries (IAII), Chinese Academy of Sciences &nbsp;
-  <sup>3</sup>National University of Singapore<br>
+  <sup>2</sup>Institute of AI for Industries (IAII), Chinese Academy of Sciences<br>
+  <sup>3</sup>Peking University &nbsp;
   <sup>4</sup>Washington University in St. Louis &nbsp;
-  <sup>5</sup>Beijing FiveAges Technology &nbsp;
-  <sup>6</sup>Peking University
+  <sup>5</sup>Beijing FiveAges Technology<br>
+  <sup>*</sup>Equal contribution &nbsp; <sup>&dagger;</sup>Corresponding author: <code>zhibo.pang@pku.edu.cn</code>
 </sub></p>
 
 <p>
   <a href="https://tacinno.github.io"><img src="https://img.shields.io/badge/project-page-2c5f7a" alt="project page"></a>
   <a href="#citation"><img src="https://img.shields.io/badge/arXiv-coming%20soon-b31b1b?logo=arxiv&logoColor=white" alt="arXiv"></a>
-  <a href="docs/en/model_zoo.md"><img src="https://img.shields.io/badge/weights-coming%20soon-624aff" alt="weights"></a>
+  <a href="https://huggingface.co/Lisavila/TacInno-VLA"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20weights-Hugging%20Face-ffbd45" alt="weights on Hugging Face"></a>
   <img src="https://img.shields.io/badge/python-3.11-3776ab?logo=python&logoColor=white" alt="python">
   <img src="https://img.shields.io/badge/PyTorch-2.7-ee4c2c?logo=pytorch&logoColor=white" alt="pytorch">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-2f81f7" alt="license"></a>
@@ -105,14 +105,14 @@ More details: [docs/en/get_started.md](docs/en/get_started.md).
 
 ## Evaluate the released models
 
-The checkpoints are hosted on ModelScope ([model zoo](docs/en/model_zoo.md)) and will be public together with the
-paper. A closed-loop evaluation needs one policy server and one UniVTAC process per task.
+The checkpoints are hosted on Hugging Face at [Lisavila/TacInno-VLA](https://huggingface.co/Lisavila/TacInno-VLA)
+([model zoo](docs/en/model_zoo.md)). A closed-loop evaluation needs one policy server and one UniVTAC process per task.
 
 **1. Download a checkpoint** (about 7.5 GB per task)
 
 ```bash
-pip install modelscope
-modelscope download --model TacInnoWeights/TacInno-VLA --include "sim/lift_can/*" --local_dir checkpoints
+pip install -U huggingface_hub
+hf download Lisavila/TacInno-VLA --include "sim/lift_can/*" --local-dir checkpoints
 ```
 
 **2. Start the policy server** on a GPU machine
@@ -222,7 +222,7 @@ checkpoint `tokenizer/sim`.
 
 ```bash
 python tools/train_tokenizer.py configs/tokenizer/tacinno-tokenizer_univtac-6task.py --work-dir work_dirs/tokenizer
-# or: modelscope download --model TacInnoWeights/TacInno-VLA --include "tokenizer/sim/*" --local_dir checkpoints
+# or: hf download Lisavila/TacInno-VLA --include "tokenizer/sim/*" --local-dir checkpoints
 
 python tools/export_codes.py configs/tokenizer/tacinno-tokenizer_univtac-6task.py \
     work_dirs/tokenizer/model_012000.pt --out data/univtac/codes --episodes 0-99
@@ -276,7 +276,7 @@ third-person camera and a wrist camera, with the policy running at 10 Hz. One ch
 paper, each on its own port:
 
 ```bash
-modelscope download --model TacInnoWeights/TacInno-VLA --include "real/four_tasks/*" --local_dir checkpoints
+hf download Lisavila/TacInno-VLA --include "real/four_tasks/*" --local-dir checkpoints
 python tools/serve_policy.py checkpoints/real/four_tasks --real-robot --bind 0.0.0.0 \
     --task real_wipe_board:8001 --task real_insert_plug:8002 --task real_lift_can:8003 --task real_unscrew_cap:8004
 ```
