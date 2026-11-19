@@ -76,8 +76,7 @@ pip install websockets msgpack
 python tools/eval_univtac.py install --univtac-root /path/to/UniVTAC
 ```
 
-`install` copies the client to `policy/TacInnoVLA/`, writes one deploy config per task (with the action execution
-horizon used in the paper) and patches the benchmark's `scripts/eval_policy.py` to record per-episode results, an
+`install` copies the client to `policy/TacInnoVLA/`, writes one deploy config per task and patches the benchmark's `scripts/eval_policy.py` to record per-episode results, an
 optional action-limit scale and a headless switch. Seeds, episode loop and success checks stay those of the benchmark.
 
 **Pretrained components**
@@ -106,10 +105,6 @@ modelscope download --model TacInnoWeights/TacInno-VLA --include "sim/lift_can/*
 
 ```bash
 python tools/serve_policy.py checkpoints/sim/lift_can --task lift_can:8000 --bind 0.0.0.0
-
-# Put Bottle reads the head camera only, which its training config sets
-python tools/serve_policy.py checkpoints/sim/put_bottle_in_shelf --task put_bottle_in_shelf:8000 --bind 0.0.0.0 \
-    --config configs/tacinno_vla/tacinno-vla_pi05_20k-headcam_univtac-put-bottle.py
 ```
 
 The joint and tactile statistics of the released models are bundled in `tacinno/datasets/stats/` and used by default.
@@ -131,20 +126,19 @@ python tools/eval_univtac.py summarize /path/to/UniVTAC/eval_result/TacInnoVLA/l
 
 **Expected results** (success rate in %, seeds 1000000 to 1000099, twice the default action limit)
 
-| Task | Checkpoint | Cameras | Execution horizon | Success |
-|:--|:--|:--|:-:|:-:|
-| Insert Hole | `sim/insert_hole` | head + wrist | 31 | 95 |
-| Insert Tube | `sim/insert_tube` | head + wrist | 31 | 95 |
-| Lift Bottle | `sim/lift_bottle` | head + wrist | 10 | 78 |
-| Lift Can | `sim/lift_can` | head + wrist | 10 | 88 |
-| Pull-out Key | `sim/pull_out_key` | head + wrist | 31 | 94 |
-| Put Bottle | `sim/put_bottle_in_shelf` | head | 31 | 75 |
-| **Average** | | | | **87.5** |
+| Task | Checkpoint | Success |
+|:--|:--|:-:|
+| Insert Hole | `sim/insert_hole` | 95 |
+| Insert Tube | `sim/insert_tube` | 95 |
+| Lift Bottle | `sim/lift_bottle` | 78 |
+| Lift Can | `sim/lift_can` | 88 |
+| Pull-out Key | `sim/pull_out_key` | 94 |
+| Put Bottle | `sim/put_bottle_in_shelf` | 75 |
+| **Average** | | **87.5** |
 
 The protocol of the paper is the default of `eval_univtac.py run`: the same seeds for every policy, episodes that raise
 a simulator or planning error are skipped and filled up with the next seed, and if a seed is run more than once the
-first finished result counts. The execution horizon is the number of rows of the 32-step action chunk executed per
-inference. `--episodes`, `--start-seed` and `--time-limit-scale` change the protocol.
+first finished result counts. `--episodes`, `--start-seed` and `--time-limit-scale` change the protocol.
 
 **Tactile-off test.** Replace the tactile input by a fixed no-contact frame at test time while every other input stays
 live, then compare the two runs seed by seed:
@@ -160,7 +154,8 @@ On Lift Can, TacInno-VLA drops from 88% to 0%. More details: [docs/en/evaluation
 
 ## Train from scratch
 
-All commands run in the `tacinno` environment from the repository root; data go to `data/univtac` (the default
+Reproducing the results above only needs the released checkpoints. This section retrains the tokenizer and the
+policies from the demonstrations. All commands run in the `tacinno` environment from the repository root; data go to `data/univtac` (the default
 `data_root` of the configs). The six tasks are
 
 ```bash
@@ -195,7 +190,6 @@ for t in $TASKS; do
   python tools/data/convert_univtac.py --base_dir data/univtac/raw_train --task_list $t --save_dir data/univtac/zarr_train/$t
   python tools/data/convert_univtac.py --base_dir data/univtac/raw_val   --task_list $t --save_dir data/univtac/zarr_val/$t
 done
-# Put Bottle is trained on the head camera only
 python tools/data/convert_univtac.py --base_dir data/univtac/raw_train --task_list put_bottle_in_shelf \
     --camera_type head --save_dir data/univtac/head_cam/zarr_train/put_bottle_in_shelf
 ```
@@ -235,25 +229,11 @@ python tools/data/compute_norm_stats.py configs/tacinno_vla/tacinno-vla_pi05_joi
 
 ### 6. Train TacInno-VLA
 
-Each released checkpoint has its own config. Lift Can and Insert Hole continue from a six-task joint stage, which is
-trained first.
-
-| Task | Config | Starts from |
-|:--|:--|:--|
-| Insert Tube | `tacinno-vla_pi05_20k_univtac-insert-tube.py` | $\pi_{0.5}$ base |
-| Lift Bottle | `tacinno-vla_pi05_20k_univtac-lift-bottle.py` | $\pi_{0.5}$ base |
-| Pull-out Key | `tacinno-vla_pi05_20k_univtac-pull-out-key.py` | $\pi_{0.5}$ base |
-| Put Bottle | `tacinno-vla_pi05_20k-headcam_univtac-put-bottle.py` | $\pi_{0.5}$ base |
-| Lift Can | `tacinno-vla_pi05_ft-17k_univtac-lift-can.py` | joint stage `tacinno-vla_pi05_joint-17k_univtac-6task.py` |
-| Insert Hole | `tacinno-vla_pi05_ft-17k-noproprio_univtac-insert-hole.py` | joint stage `tacinno-vla_pi05_joint-17k-noproprio_univtac-6task.py` |
+The training configs are in [`configs/tacinno_vla/`](configs/tacinno_vla).
 
 ```bash
 # one node, N GPUs; the global batch stays 64
 bash tools/dist_train.sh configs/tacinno_vla/tacinno-vla_pi05_20k_univtac-insert-tube.py 2
-
-# Lift Can: joint stage, then the task stage
-bash tools/dist_train.sh configs/tacinno_vla/tacinno-vla_pi05_joint-17k_univtac-6task.py 2
-bash tools/dist_train.sh configs/tacinno_vla/tacinno-vla_pi05_ft-17k_univtac-lift-can.py 2
 
 # override any key of a config
 python tools/train_policy.py CONFIG --cfg-options data.data_root=/path/to/univtac \
@@ -267,11 +247,12 @@ already calibrated in the configs. More details: [docs/en/policy.md](docs/en/pol
 
 ### 7. Evaluate your checkpoint
 
-Serve it with the statistics of your data, then follow [Evaluate the released models](#evaluate-the-released-models).
+Serve it with its config and the statistics of your data, then follow
+[Evaluate the released models](#evaluate-the-released-models).
 
 ```bash
 python tools/serve_policy.py work_dirs/<config>/ema_19999 --task insert_tube:8000 --bind 0.0.0.0 \
-    --cond-stats data/univtac/cond/cond_stats.json
+    --config configs/tacinno_vla/<config>.py --cond-stats data/univtac/cond/cond_stats.json
 ```
 
 ## Deploy on a real robot
@@ -305,7 +286,7 @@ The request format, the tactile processing for the Xense sensor and the tactile-
 | Stage | Hardware used for the paper |
 |:--|:--|
 | Tokenizer training | one GPU with 24 GB or more |
-| TacInno-VLA training | GPUs with at least 80 GB each (full fine-tuning of $\pi_{0.5}$), about 10 GPU hours for one joint stage on H200 |
+| TacInno-VLA training | GPUs with at least 80 GB each (full fine-tuning of $\pi_{0.5}$) |
 | Policy server | one GPU with at least 10 GB (bf16 inference) |
 | UniVTAC evaluation | one RTX-class GPU per simulator process |
 
@@ -316,7 +297,7 @@ The request format, the tactile processing for the Xense sensor and the tactile-
 | Installation, pretrained components and configs | [get_started.md](docs/en/get_started.md) |
 | Data layout and preparation, simulation and real robot | [data_preparation.md](docs/en/data_preparation.md) |
 | TacInno tokenizer: inputs, architecture, loss, ablation configs | [tokenizer.md](docs/en/tokenizer.md) |
-| TacInno-VLA: inputs, structure, losses, recipes, serving | [policy.md](docs/en/policy.md) |
+| TacInno-VLA: inputs, structure, losses, training, serving | [policy.md](docs/en/policy.md) |
 | UniVTAC evaluation, tactile-off test, client reference | [evaluation.md](docs/en/evaluation.md) |
 | Real-robot deployment | [real_robot.md](docs/en/real_robot.md) |
 | Checkpoints and demonstrations | [model_zoo.md](docs/en/model_zoo.md) |

@@ -20,18 +20,18 @@ modelscope download --model TacInnoWeights/TacInno-VLA --include "sim/lift_can/*
 One policy per task, fine-tuned from $\pi_{0.5}$ on demonstrations 0 to 49 of the task. Success rates are on seeds
 1000000 to 1000099 with twice the default action limit.
 
-| Task | Checkpoint | Cameras | Execution horizon | Success (%) |
-|:--|:--|:--|:-:|:-:|
-| Insert Hole | `sim/insert_hole` | head + wrist | 31 | 95 |
-| Insert Tube | `sim/insert_tube` | head + wrist | 31 | 95 |
-| Lift Bottle | `sim/lift_bottle` | head + wrist | 10 | 78 |
-| Lift Can | `sim/lift_can` | head + wrist | 10 | 88 |
-| Pull-out Key | `sim/pull_out_key` | head + wrist | 31 | 94 |
-| Put Bottle | `sim/put_bottle_in_shelf` | head | 31 | 75 |
-| **Average** | | | | **87.5** |
+| Task | Checkpoint | Success (%) |
+|:--|:--|:-:|
+| Insert Hole | `sim/insert_hole` | 95 |
+| Insert Tube | `sim/insert_tube` | 95 |
+| Lift Bottle | `sim/lift_bottle` | 78 |
+| Lift Can | `sim/lift_can` | 88 |
+| Pull-out Key | `sim/pull_out_key` | 94 |
+| Put Bottle | `sim/put_bottle_in_shelf` | 75 |
+| **Average** | | **87.5** |
 
-The training configs are in [`configs/tacinno_vla/`](../../configs/tacinno_vla). The execution horizon is the number of
-rows of the 32-step action chunk executed per inference (see [evaluation.md](evaluation.md)).
+The training configs are in [`configs/tacinno_vla/`](../../configs/tacinno_vla). `tools/serve_policy.py` and the
+evaluation client set the deployment of each released checkpoint automatically (see [evaluation.md](evaluation.md)).
 
 Each policy directory holds `model.safetensors` (weights of the deployed model, about 7.5 GB),
 `model_config.json`, `train_config.json` and `normalization/` (per-task normalization statistics). The tokenizer and the

@@ -20,8 +20,7 @@ TacInno-VLA is evaluated with the benchmark's own evaluator, `scripts/eval_polic
 | Action limit | twice the benchmark default (`UNIVTAC_STEP_LIM_SCALE=2`) |
 | Errors | episodes that raise (simulator or planning errors) are skipped and filled up with the next seed |
 | Repeated seeds | if a seed is evaluated more than once, the first finished result counts |
-| Action execution horizon | rows 1 to 31 of the 32-step chunk (Insert Hole, Insert Tube, Pull-out Key, Put Bottle); rows 1 to 10 (Lift Can, Lift Bottle) |
-| Cameras | head and wrist; the Put Bottle checkpoint uses the head camera only (the server ignores the wrist image) |
+| Deployment | set per task by the deploy configs that `install` writes and by the server |
 | Paired comparisons | exact two-sided McNemar test on the seeds both policies completed |
 
 ## Step by step
@@ -41,9 +40,6 @@ optional action-limit scale and a headless switch (`UNIVTAC_LIVESTREAM=0`).
 
 ```bash
 python tools/serve_policy.py checkpoints/sim/lift_can --task lift_can:8000 --bind 0.0.0.0
-# Put Bottle reads the head camera only; its training config sets that:
-python tools/serve_policy.py checkpoints/sim/put_bottle_in_shelf --task put_bottle_in_shelf:8000 --bind 0.0.0.0 \
-    --config configs/tacinno_vla/tacinno-vla_pi05_20k-headcam_univtac-put-bottle.py
 ```
 
 The server binds to `127.0.0.1` unless `--bind` is given. The joint and tactile statistics of the released models

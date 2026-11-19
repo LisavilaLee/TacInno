@@ -16,7 +16,7 @@ pi0.5 backbone is vendored in [`third_party/openpi`](../../third_party/openpi).
 | head and wrist images | simulator cameras (real robot: third-person and wrist) | uint8 RGB, resized to 224 x 224, scaled to [-1, 1] | prefix (SigLIP) |
 | language prompt | task instruction | PaliGemma tokenizer, at most 150 tokens with the images | prefix |
 | state | 7 arm joints + gripper opening at time t | written into the 120-D unified state (arm 9:16, gripper 44), z-score per task | adaRMSNorm condition of the action expert |
-| proprio history (Lift Can recipe only) | joints of frames t-7 .. t | (8, 8), normalized with the training mean / std; frames before the episode start repeat the first | 8 condition tokens |
+| proprio history (optional, `cond_proprio_hist`) | joints of frames t-7 .. t | (8, 8), normalized with the training mean / std; frames before the episode start repeat the first | 8 condition tokens |
 | tactile observations | frames t-8, t-4, t, both gels | (3, 2, 3, 96, 128): indentation field and marker tangential displacement field (x, y) / sigma_u | 60 condition tokens |
 
 Frames are control steps (one control step = one recorded data frame in UniVTAC); histories are clipped at the episode
@@ -72,32 +72,18 @@ actions are trained only by L_flow. This is verified at test time with the tacti
 frame by a no-contact frame, `tools/serve_policy.py --tactile-off`) and by comparing with the variant without the
 code loss (`code_loss_weight=0`).
 
-## Recipes of the released checkpoints
+## Training settings
 
-All recipes: global batch 64, AdamW (b1 0.9, b2 0.95, eps 1e-8, weight decay 1e-10), gradient clipping 1.0,
-bfloat16, torch.compile, seed 42, demonstrations 0-49 of the task(s).
-
-| Task | Config | Start | Steps | Learning rate | Proprio tokens | Cameras | EMA |
-|---|---|---|---|---|---|---|---|
-| (joint stage) | `tacinno-vla_pi05_joint-17k_univtac-6task.py` | pi0.5 base | 17000 | 500 warm-up, 5e-5 -> 5e-6 cosine | 8 | head + wrist | - |
-| (joint stage) | `tacinno-vla_pi05_joint-17k-noproprio_univtac-6task.py` | pi0.5 base | 17000 | 500 warm-up, 5e-5 -> 5e-6 cosine | 0 | head + wrist | - |
-| Lift Can | `tacinno-vla_pi05_ft-17k_univtac-lift-can.py` | joint (8 proprio), step 16999 | 17000 | 200 warm-up, 5e-6 constant | 8 | head + wrist | 0.99 |
-| Insert Hole | `tacinno-vla_pi05_ft-17k-noproprio_univtac-insert-hole.py` | joint (no proprio), step 16999 | 17000 | 200 warm-up, 5e-6 constant | 0 | head + wrist | 0.99 |
-| Insert Tube | `tacinno-vla_pi05_20k_univtac-insert-tube.py` | pi0.5 base | 20000 | 500 warm-up, 5e-5 -> 5e-6 cosine | 0 | head + wrist | 0.99 |
-| Lift Bottle | `tacinno-vla_pi05_20k_univtac-lift-bottle.py` | pi0.5 base | 20000 | same | 0 | head + wrist | 0.99 |
-| Pull-out Key | `tacinno-vla_pi05_20k_univtac-pull-out-key.py` | pi0.5 base | 20000 | same | 0 | head + wrist | 0.99 |
-| Put Bottle | `tacinno-vla_pi05_20k-headcam_univtac-put-bottle.py` | pi0.5 base | 20000 | same | 0 | head | 0.99 |
-| Real robot (4 tasks) | `real_robot/tacinno-vla_pi05_20k_real-4task.py` | pi0.5 base | 20000 | same | 0 | third-person + wrist | 0.99 |
-
-The released weights are the EMA weights of the last step (`ema_16999/` or `ema_19999/`).
+All configs: global batch 64, AdamW (b1 0.9, b2 0.95, eps 1e-8, weight decay 1e-10), gradient clipping 1.0,
+bfloat16, torch.compile, seed 42, EMA 0.99, demonstrations 0-49. The config of every released checkpoint is in
+[`configs/tacinno_vla/`](../../configs/tacinno_vla) (real robot: [`configs/real_robot/`](../../configs/real_robot)), and
+the released weights are the EMA weights of the last step.
 
 ## Training
 
 ```bash
 # one node, N GPUs (the global batch stays 64)
 bash tools/dist_train.sh configs/tacinno_vla/tacinno-vla_pi05_20k_univtac-insert-tube.py 2
-# continue a joint model on one task: train the joint stage first, then
-bash tools/dist_train.sh configs/tacinno_vla/tacinno-vla_pi05_ft-17k_univtac-lift-can.py 2
 # override any key
 python tools/train_policy.py CONFIG --cfg-options schedule.num_steps=1000 data.data_root=/path/to/univtac
 ```
@@ -120,7 +106,8 @@ chunk = policy.infer(head=rgb_head, wrist=rgb_wrist, qpos=q8, qhist=q8_history,
 ```bash
 python tools/serve_policy.py checkpoints/sim/lift_can --task lift_can:8000
 # a policy trained on your own data: pass its statistics
-python tools/serve_policy.py work_dirs/<config>/ema_<step> --task lift_can:8000 --cond-stats data/univtac/cond/cond_stats.json
+python tools/serve_policy.py work_dirs/<config>/ema_<step> --task lift_can:8000 --config CONFIG \
+    --cond-stats data/univtac/cond/cond_stats.json
 ```
 
 The server protocol is described in [`tacinno/apis/server.py`](../../tacinno/apis/server.py); the UniVTAC evaluation
@@ -130,6 +117,4 @@ client is described in [evaluation.md](evaluation.md).
 
 * The code queries are kept in the inference sequence (removing them would shift the rotary positions of the action
   tokens); they cost 4 tokens and do not change the actions.
-* The recipes differ per task (start point, proprio tokens, cameras), following the configurations that were trained
-  and evaluated; the shared parts (condition tokens, losses, schedule family) are identical.
 * The policy assumes the tactile frames are aligned with the control steps at which the demonstrations were recorded.

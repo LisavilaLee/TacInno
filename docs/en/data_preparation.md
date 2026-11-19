@@ -13,7 +13,7 @@ data/univtac/
 ├── codes/<task>/<ep:04d>.npz          tactile innovation codes of every frame       (step 3)
 ├── zarr_train/<task>/<task>_all.zarr  policy training data, head + wrist cameras     (step 1)
 ├── zarr_val/<task>/...                held-out episodes 90-99
-├── head_cam/zarr_train/put_bottle_in_shelf/...   head-camera-only copy (Put Bottle recipe)
+├── head_cam/zarr_train/put_bottle_in_shelf/...   head-camera-only copy
 ├── cond/                              condition arrays and targets                    (steps 4-5)
 │   ├── cond_stats.json
 │   └── <split>/<task>/{fields,joints8,ep_start,aux_m,aux_mv,aux_ec,code_tgt,code_tv}.npy, meta.json
@@ -81,7 +81,7 @@ python tools/data/compute_norm_stats.py configs/tacinno_vla/tacinno-vla_pi05_joi
 ```
 
 z-score statistics of the state and the action per task (`norm/univtac_6task/UniVTAC_<task>/`). Every UniVTAC
-recipe uses this six-task folder, so it is computed once. The released checkpoints carry their statistics in
+config uses this six-task folder, so it is computed once. The released checkpoints carry their statistics in
 `normalization/`; inference needs no data preparation.
 
 ## Real robot
