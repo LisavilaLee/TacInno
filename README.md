@@ -29,6 +29,8 @@ exporting tactile innovation codes, fine-tuning TacInno-VLA from $\pi_{0.5}$, cl
 real robot. The method, the results and the rollout videos are described on the
 **[project page](https://tacinno.github.io)**.
 
+<p align="center"><img src="resources/teaser.webp" width="100%" alt="Overview of TacInno"></p>
+
 | Goal | What it needs | Section |
 |:--|:--|:--|
 | Reproduce the simulation results with the released checkpoints | one GPU with at least 10 GB for the policy server, a UniVTAC installation | [Evaluate the released models](#evaluate-the-released-models) |
