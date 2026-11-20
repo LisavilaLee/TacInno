@@ -76,9 +76,10 @@ code loss (`code_loss_weight=0`).
 ## Training settings
 
 All configs: global batch 64, AdamW (b1 0.9, b2 0.95, eps 1e-8, weight decay 1e-10), gradient clipping 1.0,
-bfloat16, torch.compile, seed 42, EMA 0.99, demonstrations 0-49. The config of every released checkpoint is in
+bfloat16, torch.compile, seed 42; demonstrations 0-49 of each UniVTAC task (real robot: the first 45 of each task).
+The config of every released checkpoint is in
 [`configs/tacinno_vla/`](../../configs/tacinno_vla) (real robot: [`configs/real_robot/`](../../configs/real_robot)), and
-the released weights are the EMA weights of the last step.
+the released weights are the EMA weights (decay 0.99) of the last step.
 
 ## Training
 
