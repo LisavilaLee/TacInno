@@ -16,11 +16,10 @@ TacInno-VLA is evaluated with the benchmark's own evaluator, `scripts/eval_polic
 
 | Setting | Value |
 |:--|:--|
-| Seeds | 1000000 to 1000099, identical for every policy (100 episodes per task) |
-| Action limit | twice the benchmark default (`UNIVTAC_STEP_LIM_SCALE=2`) |
-| Errors | episodes that raise (simulator or planning errors) are skipped and filled up with the next seed |
-| Repeated seeds | if a seed is evaluated more than once, the first finished result counts |
-| Deployment | set per task by the deploy configs that `install` writes and by the server |
+| Seeds | from 1000000, the same for every policy (100 valid episodes per task) |
+| Action limit | twice the benchmark default for every policy (`UNIVTAC_STEP_LIM_SCALE=2`), because the demonstrations are longer than those for which the default limits were set |
+| Errors | episodes interrupted by simulator errors are discarded and evaluation continues with the next seed; an error of the policy server or an invalid action chunk makes the client hold the robot still, and the episode fails |
+| Deployment | the deploy configs that `install` writes |
 | Paired comparisons | exact two-sided McNemar test on the seeds both policies completed |
 
 ## Step by step
@@ -47,7 +46,7 @@ are bundled in `tacinno/datasets/stats/` and used by default; `--cond-stats` and
 files. On connect the server reports the task, the checkpoint and the tactile history it expects; the client checks
 them before the first episode.
 
-**3. Evaluate** 100 seeds with twice the default action limit:
+**3. Evaluate** 100 episodes with twice the default action limit:
 
 ```bash
 python tools/eval_univtac.py run --univtac-root /path/to/UniVTAC --task lift_can --host <server> --port 8000
@@ -57,12 +56,12 @@ python tools/eval_univtac.py run --univtac-root /path/to/UniVTAC --task lift_can
 `eval_policy.py`. Results go to `eval_result/TacInnoVLA/<task>/deploy_<task>/<time>/` of the UniVTAC checkout
 (`episodes.json`, logs, and the benchmark's videos).
 
-**4. Summarize.** Several run directories of the same policy can be merged (for example when the 100 seeds are split
-over several simulator processes):
+**4. Summarize.** Several run directories of the same policy can be merged (for example when the seeds are split over
+several simulator processes). The success rate is computed over the first 100 valid episodes from seed 1000000:
 
 ```bash
 python tools/eval_univtac.py summarize /path/to/UniVTAC/eval_result/TacInnoVLA/lift_can/deploy_lift_can
-# seeds 1000000-1000099: success 88/100 = 88.0%
+# 100 valid episodes (seeds 1000000-1000099): success 88/100 = 88.0%
 ```
 
 ## Tactile-off test
@@ -99,10 +98,11 @@ The deploy config keys are `host`, `port` (overridable with `TACINNO_HOST` and `
 ## Statistics in Python
 
 ```python
-from tacinno.evaluation import PAPER_SEEDS, compare, first_results, success_rate
+from tacinno.evaluation import compare, first_results, first_valid_seeds, success_rate
 
-ours = first_results(["eval_result/TacInnoVLA/lift_can/deploy_lift_can"], PAPER_SEEDS)
-off = first_results(["eval_result/TacInnoVLA/lift_can/deploy_lift_can_tactile_off"], PAPER_SEEDS)
-print(success_rate(ours, PAPER_SEEDS))  # {'success': ..., 'valid': ..., 'rate': ..., 'missing': [...]}
-print(compare(ours, off, PAPER_SEEDS))   # paired seeds, discordant counts, exact McNemar p-value
+ours = first_results(["eval_result/TacInnoVLA/lift_can/deploy_lift_can"])
+off = first_results(["eval_result/TacInnoVLA/lift_can/deploy_lift_can_tactile_off"])
+s_ours, s_off = first_valid_seeds(ours), first_valid_seeds(off)  # first 100 valid episodes from seed 1000000
+print(success_rate(ours, s_ours))  # {'success': ..., 'valid': ..., 'rate': ..., 'missing': [...]}
+print(compare(ours, off, sorted(set(s_ours) & set(s_off))))  # paired seeds, discordant counts, exact McNemar p
 ```

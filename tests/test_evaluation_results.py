@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from tacinno.evaluation.results import compare, first_results, mcnemar_exact, success_rate
+from tacinno.evaluation.results import compare, first_results, first_valid_seeds, mcnemar_exact, success_rate
 
 
 def _write(run_dir, episodes):
@@ -59,3 +59,17 @@ def test_paired_comparison(tmp_path):
     assert c.paired == 8 and c.only_a == 2 and c.only_b == 0
     assert c.success_a == 6 and c.success_b == 4
     assert c.p_value == pytest.approx(mcnemar_exact(2, 0))
+
+
+def test_first_valid_seeds_replace_errors_by_the_next_seed(tmp_path):
+    _write(tmp_path / "2026-01-01_10:00:00", [
+        {"seed": 10, "result": "success", "seconds": 1},
+        {"seed": 11, "result": "error"},
+        {"seed": 12, "result": "failed", "seconds": 1},
+        {"seed": 13, "result": "success", "seconds": 1},
+        {"seed": 14, "result": "success", "seconds": 1},
+    ])
+    res = first_results([tmp_path])
+    assert first_valid_seeds(res, start=10, num=3) == [10, 12, 13]
+    s = success_rate(res, first_valid_seeds(res, start=10, num=3))
+    assert (s["success"], s["valid"]) == (2, 3)

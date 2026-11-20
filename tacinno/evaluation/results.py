@@ -2,12 +2,11 @@
 
 Protocol used in the paper
 --------------------------
-* Seeds ``1000000 .. 1000099`` (100 episodes per task), identical for every policy.
-* The action limit of every task is twice the benchmark default (``UNIVTAC_STEP_LIM_SCALE=2``).
-* Episodes that raise (simulator or planning errors) are skipped by the evaluator and filled with the next seed; they
-  never count as failures. Only ``success`` / ``failed`` episodes are results.
-* If a seed was evaluated more than once (for example, evaluation split over several processes that overlap), the
-  result that finished first counts.
+* Seeds start at ``1000000`` and are the same for every policy.
+* Episodes interrupted by simulator errors are discarded and evaluation continues with the next seed until 100 valid
+  episodes are collected (the benchmark's evaluator). A policy-side failure (an error of the policy server or an
+  invalid action chunk) is not an error of this kind: the client holds the robot still and the episode fails.
+* The action limit of every task is twice the benchmark default (``UNIVTAC_STEP_LIM_SCALE=2``) for every policy.
 * Two policies are compared on the seeds both completed with the exact two-sided McNemar test on the discordant pairs.
 
 The evaluator writes one ``episodes.json`` per run directory (``eval_result/<policy>/<task>/<deploy>/<time>/``).
@@ -26,6 +25,7 @@ __all__ = [
     "PAPER_SEEDS",
     "load_episode_files",
     "first_results",
+    "first_valid_seeds",
     "success_rate",
     "mcnemar_exact",
     "PairedComparison",
@@ -60,14 +60,15 @@ def _run_start(run_dir: str, fallback: float) -> float:
 
 
 def first_results(paths: Iterable[PathLike], seeds: Optional[Sequence[int]] = None) -> Dict[int, dict]:
-    """Map seed -> the first finished episode (``success`` or ``failed``) among all given runs.
+    """Map seed -> the finished episode (``success`` or ``failed``) of that seed among all given runs.
 
-    The finish time is the episode's ``finished_at`` (unix seconds) when present; otherwise the start time encoded in
+    Seeds are normally evaluated once. When several runs of one policy are merged and a seed occurs more than once,
+    the result that finished first is used (never the better one). The finish time is the episode's ``finished_at`` (unix seconds) when present; otherwise the start time encoded in
     the run directory name plus the cumulative episode durations of that run (the order in which the run finished
     its episodes). Each returned episode has an extra ``source`` key with the file it came from.
     """
     wanted = None if seeds is None else set(int(s) for s in seeds)
-    best: Dict[int, tuple] = {}
+    earliest: Dict[int, tuple] = {}
     for f in load_episode_files(paths):
         try:
             with open(f) as fh:
@@ -83,9 +84,15 @@ def first_results(paths: Iterable[PathLike], seeds: Optional[Sequence[int]] = No
             if wanted is not None and seed not in wanted:
                 continue
             finished = float(ep["finished_at"]) if ep.get("finished_at") is not None else t
-            if seed not in best or finished < best[seed][0]:
-                best[seed] = (finished, dict(ep, source=f))
-    return {s: e for s, (_, e) in sorted(best.items())}
+            if seed not in earliest or finished < earliest[seed][0]:
+                earliest[seed] = (finished, dict(ep, source=f))
+    return {s: e for s, (_, e) in sorted(earliest.items())}
+
+
+def first_valid_seeds(results: Dict[int, dict], start: int = PAPER_SEEDS.start, num: int = len(PAPER_SEEDS)) -> List[int]:
+    """The first ``num`` seeds from ``start`` (in seed order) that have a finished episode: the evaluated set of the
+    protocol, in which episodes interrupted by simulator errors are discarded and replaced by the next seed."""
+    return [s for s in sorted(results) if s >= start][:num]
 
 
 def _ok(ep: dict) -> bool:

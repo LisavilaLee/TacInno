@@ -3,8 +3,8 @@
     python tools/data/build_tactile_stats.py --data data/univtac/tactile --out data/univtac/tactile/tactile_stats.json
 
 Uses every ``<data>/<task>/<ep:04d>.npz`` with ep < ``--train-eps`` (the bundled
-``tacinno/datasets/stats/univtac_tactile_stats.json`` was computed on episodes 0-89 of eight UniVTAC tasks: the six
-evaluated tasks plus grasp_classify and insert_HDMI). Output keys:
+``tacinno/datasets/stats/univtac_tactile_stats.json`` was computed on episodes 0-89 of the released demonstrations).
+Output keys:
 
   rest_grid      (63, 2) global rest marker grid in 7 x 9 raster order (median of the per-episode, per-gel rest grids
                  after sorting each into the raster)

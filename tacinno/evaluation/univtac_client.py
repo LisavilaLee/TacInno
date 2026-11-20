@@ -64,6 +64,7 @@ except ImportError:  # pragma: no cover
 __all__ = [
     "InfrastructureError",
     "ServerUnreachable",
+    "PolicyError",
     "PolicyServerClient",
     "TacInnoVLAPolicy",
     "TactileOff",
@@ -75,7 +76,7 @@ __all__ = [
 
 GELS = (("l", "left_tactile"), ("r", "right_tactile"))
 
-#: action execution horizon (rows executed per inference) used for every task in the paper
+#: action execution horizon of the released checkpoints (rows of the chunk executed per inference)
 DEFAULT_REPLAN: Dict[str, int] = {
     "insert_hole": 31,
     "insert_tube": 31,
@@ -87,8 +88,13 @@ DEFAULT_REPLAN: Dict[str, int] = {
 
 
 class InfrastructureError(RuntimeError):
-    """A problem of the evaluation infrastructure (wrong server, wrong checkpoint). The evaluator records the seed as
-    an error and fills up with the next seed, so such episodes never count as failures of the policy."""
+    """A setup problem of the evaluation (the server serves another task or checkpoint, or cannot be reached). The
+    evaluator records the episode as an error; fix the setup and rerun."""
+
+
+class PolicyError(RuntimeError):
+    """The policy server returned an error or an invalid action chunk. The client then holds the robot still for the
+    rest of the episode, so the episode counts as a failure of the policy."""
 
 
 class ServerUnreachable(InfrastructureError):
@@ -202,7 +208,7 @@ class PolicyServerClient:
                 self._connect()
                 continue
             if isinstance(reply, str):  # the server sends its traceback as text
-                raise RuntimeError(f"policy server error:\n{reply}")
+                raise PolicyError(f"policy server error:\n{reply}")
             return msgpack_numpy.unpackb(reply)
         raise AssertionError("unreachable")
 
@@ -261,6 +267,7 @@ class TacInnoVLAPolicy:
         self.step = 0
         self.k = 0
         self.latency_s: List[float] = []
+        self.halted = False
 
     def build_request(self, observation: Dict[str, Any], q: np.ndarray) -> Dict[str, Any]:
         cams = observation["observation"]
@@ -288,7 +295,7 @@ class TacInnoVLAPolicy:
         chunk = np.asarray(self.client.infer(request)["model8"], dtype=np.float32)
         self.latency_s.append(time.perf_counter() - t0)
         if chunk.ndim != 2 or chunk.shape[1] != 8 or chunk.shape[0] <= self.replan or not np.all(np.isfinite(chunk)):
-            raise ValueError(f"invalid action chunk of shape {chunk.shape}")
+            raise PolicyError(f"invalid action chunk of shape {chunk.shape}")
         return chunk
 
     @staticmethod
@@ -307,8 +314,16 @@ class TacInnoVLAPolicy:
         if self.use_field or self.tac_hist_offsets:
             self.tac_hist = (self.tac_hist + [pack_tactile(observation["tactile"])])[-self.keep:]
         e = self.step
-        if self.chunk is None or e - self.chunk_step >= self.replan:
-            self.chunk, self.chunk_step, self.chunk_q = self._infer_chunk(observation, q), e, q.copy()
+        if not self.halted and (self.chunk is None or e - self.chunk_step >= self.replan):
+            try:
+                self.chunk, self.chunk_step, self.chunk_q = self._infer_chunk(observation, q), e, q.copy()
+            except PolicyError as exc:
+                print(f"[TacInnoVLA] seed {self.seed} step {e}: {exc}; holding still, the episode counts as a failure",
+                      flush=True)
+                self.halted, self.hold_q = True, q.copy()
+        if self.halted:
+            self.step += 1
+            return self.hold_q.copy()
         action = self.resolve(self.chunk[1 + e - self.chunk_step], self.chunk_q)
         if e % 100 == 0:
             ms = 1000 * float(np.mean(self.latency_s[-20:])) if self.latency_s else float("nan")

@@ -2,13 +2,13 @@
 """Serve a TacInno-VLA checkpoint over websockets (one port per task).
 
     # simulation (UniVTAC client): six tasks share one checkpoint only if it was trained on all of them
-    python tools/serve_policy.py CKPT_DIR --task lift_can:36850
+    python tools/serve_policy.py CKPT_DIR --task lift_can:8000
     # a policy trained with another config: its deploy section sets the cameras and the domain prefix
-    python tools/serve_policy.py CKPT_DIR --config configs/tacinno_vla/<config>.py --task lift_can:36850
+    python tools/serve_policy.py CKPT_DIR --config configs/tacinno_vla/<config>.py --task lift_can:8000
     # tactile-off test: every tactile frame is replaced by a no-contact frame
-    python tools/serve_policy.py CKPT_DIR --task lift_can:36850 --tactile-off no_contact_frame.npz
+    python tools/serve_policy.py CKPT_DIR --task lift_can:8000 --tactile-off no_contact_frame.npz
     # real robot (four tasks, one Xense gel)
-    python tools/serve_policy.py CKPT_DIR --real-robot --task real_wipe_board:39101 --task real_lift_can:39102
+    python tools/serve_policy.py CKPT_DIR --real-robot --task real_wipe_board:8001 --task real_lift_can:8002
 
 The joint statistics (``--cond-stats``) and the tactile statistics (``--tactile-stats``) of the released models are
 bundled in ``tacinno/datasets/stats/`` and used by default; pass the files of your own condition data when serving a

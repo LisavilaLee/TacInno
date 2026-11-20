@@ -13,14 +13,14 @@ TacInno-VLA client as its policy; the client queries a policy server started wit
    per-episode records (``episodes.json``), an optional action-limit scale and a headless switch; the episode loop,
    seeds and success checks are the benchmark's.
 
-2. Start a policy server for the task (separate shell, GPU machine), then evaluate 100 seeds with twice the default
+2. Start a policy server for the task (separate shell, GPU machine), then evaluate 100 episodes with twice the default
    action limit, as in the paper::
 
        python tools/eval_univtac.py run --univtac-root /path/to/UniVTAC --task lift_can --host <server> --port 8000
 
    Add ``--tactile-off`` for the tactile-off test.
 
-3. Summarize (success rate over seeds 1000000-1000099, first finished result per seed)::
+3. Summarize (success rate over the first 100 valid episodes from seed 1000000)::
 
        python tools/eval_univtac.py summarize /path/to/UniVTAC/eval_result/TacInnoVLA/lift_can/deploy_lift_can
 
@@ -38,10 +38,10 @@ import sys
 REPO = osp.dirname(osp.dirname(osp.abspath(__file__)))
 sys.path.insert(0, REPO)
 
-from tacinno.evaluation.results import PAPER_SEEDS, first_results, success_rate  # noqa: E402
+from tacinno.evaluation.results import PAPER_SEEDS, first_results, first_valid_seeds, success_rate  # noqa: E402
 
 TASKS = ("insert_hole", "insert_tube", "lift_bottle", "lift_can", "pull_out_key", "put_bottle_in_shelf")
-#: action execution horizon per task (rows of the 32-step chunk executed per inference), as in the paper
+#: action execution horizon of the released checkpoints (rows of the 32-step chunk executed per inference)
 REPLAN = {"insert_hole": 31, "insert_tube": 31, "lift_bottle": 10, "lift_can": 10, "pull_out_key": 31,
           "put_bottle_in_shelf": 31}
 PATCH = osp.join(REPO, "tools", "univtac", "eval_policy_protocol.patch")
@@ -124,12 +124,13 @@ def cmd_run(args: argparse.Namespace) -> None:
 
 
 def cmd_summarize(args: argparse.Namespace) -> None:
-    seeds = range(args.start_seed, args.start_seed + args.num)
+    seeds = first_valid_seeds(first_results(args.results), args.start_seed, args.num)
     res = first_results(args.results, seeds)
     s = success_rate(res, seeds)
-    print(f"seeds {seeds.start}-{seeds.stop - 1}: success {s['success']}/{s['valid']} = {100 * s['rate']:.1f}%")
-    if s["missing"]:
-        print(f"missing {len(s['missing'])} seeds, first: {s['missing'][:10]}")
+    span = f"seeds {seeds[0]}-{seeds[-1]}" if seeds else "no seeds"
+    print(f"{s['valid']} valid episodes ({span}): success {s['success']}/{s['valid']} = {100 * s['rate']:.1f}%")
+    if s["valid"] < args.num:
+        print(f"only {s['valid']} of {args.num} episodes finished so far")
 
 
 def main() -> None:

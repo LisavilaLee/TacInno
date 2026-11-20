@@ -47,9 +47,10 @@ from the gel depth image and the marker positions, identically for training (sto
   tokens and the code queries are updated by every expert layer (plain residual, RMSNorm without modulation); the
   proprio tokens are not (each layer only projects their input embedding to keys and values).
 * **Output**: the last-layer expert outputs of the 32 action tokens -> Linear 1024->120 = flow-matching velocity.
-  At inference 10 Euler steps from Gaussian noise; the condition tokens and the prefix are computed once per decision
-  (KV cache). The chunk holds arm joint targets relative to the joints at inference time and the absolute gripper
-  opening; deployment executes 10 steps of it and re-plans.
+  At inference 10 Euler steps from Gaussian noise; the prefix is computed once per decision and its keys and values
+  are reused in every step. The chunk holds arm joint targets relative to the joints at inference time and the
+  absolute gripper opening; deployment executes the first rows of the chunk and re-plans (`replan` in the deploy
+  config).
 
 ## Losses
 

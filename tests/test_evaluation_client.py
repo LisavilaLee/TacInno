@@ -131,6 +131,36 @@ def test_tactile_off_sends_a_fixed_frame(server):
     assert server.requests[3]["tac_hist"][0]["l_depth_z"] != frames[0]  # a new episode freezes its own first frame
 
 
+class InvalidChunkServer(FakeServer):
+    """Answers the third inference with a non-finite chunk."""
+
+    @staticmethod
+    def chunk(k):
+        c = FakeServer.chunk(k)
+        if k == 2:
+            c[0, 0] = np.nan
+        return c
+
+
+def test_policy_error_holds_still_and_fails_the_episode():
+    server = InvalidChunkServer()
+    try:
+        policy = Policy(dict(task_name="lift_can", host="127.0.0.1", port=server.port, replan=10))
+        task = FakeTask()
+        for step in range(30):
+            policy.eval(task, _obs(step))
+        # the invalid chunk arrives at step 20; from then on no request is sent and the joints are held
+        assert [int(r["step"]) for r in server.requests] == [0, 10, 20]
+        acts = np.stack(task.actions)
+        assert np.allclose(acts[20:], 20.0)  # the joint state of step 20 (all joints read 20 in _obs(20))
+        policy.reset()  # a new episode queries the server again
+        policy.eval(task, _obs(0))
+        assert len(server.requests) == 4
+        policy.close()
+    finally:
+        server.close()
+
+
 def test_metadata_checks(server):
     with pytest.raises(InfrastructureError):
         TacInnoVLAPolicy(dict(task_name="insert_hole", host="127.0.0.1", port=server.port))

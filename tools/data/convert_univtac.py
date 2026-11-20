@@ -19,8 +19,6 @@ Put Bottle recipe, which is trained on a head-camera-only copy (``--camera_type 
 - Supports both tactile key conventions:
   `left/right_tactile` and `left/right_gsmini`.
 - Supports `--episodes_per_task` to cap the number of trajectories per task.
-- If an earlier version produced BGR zarr outputs, regenerate them with this
-  script before training.
 """
 from __future__ import annotations
 
@@ -44,12 +42,10 @@ for _p in (_ROOT, _ROOT / "third_party" / "openpi" / "src"):
 from openpi.replay_buffer import ReplayBuffer  # noqa: E402
 import json
 
-# Camera setting per task: "all" = head + wrist, "head" = head only. TacInno-VLA uses head + wrist for all six tasks
-# (the Put Bottle recipe uses a head-only copy, --camera_type head).
+# Default camera setting per task: "all" = head + wrist, "head" = head only (override with --camera_type).
 TASK_SETTINGS = {t: {"camera_type": "all", "downsample": 1} for t in (
-    "insert_hole", "insert_tube", "lift_bottle", "lift_can", "pull_out_key", "put_bottle_in_shelf", "place_hidden_support")}
-TASK_SETTINGS.update({t: {"camera_type": "head", "downsample": 1} for t in (
-    "insert_HDMI", "insert_card", "insert_lean", "grasp_classify")})
+    "insert_hole", "insert_tube", "lift_bottle", "lift_can", "pull_out_key", "put_bottle_in_shelf")}
+TASK_SETTINGS.update({t: {"camera_type": "head", "downsample": 1} for t in ("insert_HDMI", "grasp_classify")})
 
 # Default FAAS gripper slot, aligned with other FTP1 parsers.
 DEFAULT_GRIPPER_IDX = 28
@@ -174,11 +170,6 @@ def _load_univtac_episode(
                 ("tactile", "right_tactile", "rgb_marker"),
             ]
         )[..., ::-1]
-        # from PIL import Image
-        # Image.fromarray(head_rgb[0]).save("head_rgb.jpg")
-        # Image.fromarray(wrist_rgb[0]).save("wrist_rgb.jpg")
-        # Image.fromarray(left_tac[0]).save("left_tac.jpg")
-        # Image.fromarray(right_tac[0]).save("right_tac.jpg")
 
         if head_rgb is None or head_rgb.shape[0] != T_full:
             return None
@@ -283,7 +274,6 @@ def _run(
         "lift_bottle": "grasp the bottle and lift it vertically, keeping its final base within 5 cm of the wall.",
         "pull_out_key": "pull out the key.",
         "put_bottle_in_shelf": "grasp the bottle, then position it into the shelf cavity.",
-        "place_hidden_support": "lower the can into the receiver and release it once it rests on the support.",
     }
 
     for task_id, task_dir in task_dirs:
@@ -328,25 +318,8 @@ def _run(
             instruction = instruction_org.ljust(INSTRUCTION_PAD_LEN)
             episode["sub_task_instruction"] = np.array([instruction] * len(episode["timestamps"]))
             
-            # print(f"====================================== Task: {task_id} ======================================")
-            # _save_video(episode["camera_ego_rgb"], zarr_path, count, fps=VIDEO_FPS)
-            # for key in episode.keys():
-            #     print(f"{key}: {episode[key].shape}")
-            # print(f"instruction: {instruction}")
-            # timestamps: (56,)
-            # camera_ego_rgb: (56, 224, 224, 3)
-            # right_arm_joints: (56, 7)
-            # right_hand_joints: (56, 1)
-            # right_hand_joints_idx: (56, 1)
-            # right_tactile_data_gripper: (56, 2, 224, 224, 3)
-            # right_tactile_area_gripper: (56, 2)
-            # right_tactile_sensor_gripper: (56,)
-            # right_tactile_type_gripper: (56,)
-            # right_wrist_camera_rgb: (56, 224, 224, 3)
-            # sub_task_instruction: (56,)
             replay_buffer.add_episode(episode, compressors="disk")
             count += 1
-            # break
 
         print(f"  {task_id}: wrote {count} episodes -> {zarr_path}")
 

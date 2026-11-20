@@ -78,7 +78,7 @@ def main():
 
     torch.manual_seed(tc.seed)
     torch.backends.cuda.matmul.allow_tf32 = True
-    # The model is built after the data (as in the paper run) so that parameter initialisation sees the same RNG
+    # The model is built after the data (as for the released checkpoint) so that parameter initialisation sees the same RNG
     # stream; the data only needs the window geometry, read from the config.
     probe = _ModelProbe(cfg.model)
     tr, va = build_data(cfg, probe, 'train', device), build_data(cfg, probe, 'val', device)
