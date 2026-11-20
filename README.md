@@ -183,7 +183,8 @@ expert scripts in the simulator used for evaluation (about 112 GB for eight task
 policies, 0 to 89 train the tokenizer, and 90 to 99 are held out.
 
 ```bash
-modelscope download --dataset TacInnoWeights/TacInno-UniVTAC-Demos --local_dir data/univtac/download
+hf download Lisavila/TacInno-UniVTAC-Demos --repo-type dataset --local-dir data/univtac/download
+# a single task only: add --include "lift_can/*"
 
 # layouts read by the tools: raw/<task>/hdf5/<ep>.hdf5, and raw_train / raw_val/<task>/demo/hdf5/<ep>.hdf5
 D=$(realpath data/univtac)
