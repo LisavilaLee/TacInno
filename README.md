@@ -20,7 +20,7 @@
 
 <p>
   <a href="https://tacinno.github.io"><img src="https://img.shields.io/badge/project-page-2c5f7a" alt="project page"></a>
-  <a href="#citation"><img src="https://img.shields.io/badge/arXiv-coming%20soon-b31b1b?logo=arxiv&logoColor=white" alt="arXiv"></a>
+  <a href="https://arxiv.org/abs/2611.26405"><img src="https://img.shields.io/badge/arXiv-2611.26405-b31b1b?logo=arxiv&logoColor=white" alt="arXiv"></a>
   <a href="https://huggingface.co/Lisavila/TacInno-VLA"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20weights-Hugging%20Face-ffbd45" alt="weights on Hugging Face"></a>
   <img src="https://img.shields.io/badge/python-3.11-3776ab?logo=python&logoColor=white" alt="python">
   <img src="https://img.shields.io/badge/PyTorch-2.7-ee4c2c?logo=pytorch&logoColor=white" alt="pytorch">
@@ -336,7 +336,7 @@ TacInno/
 @article{li2026tacinno,
   title   = {TacInno: Teaching Vision-Language-Action Models the Contact Dynamics Beyond Vision and Action},
   author  = {Li, Weile and Lou, Yunfan and Shi, Muqing and Zhang, Zihao and Huang, Zhenbiao and Yao, Boxian and Zhu, Xiyu and Pang, Zhibo},
-  journal = {arXiv preprint},
+  journal = {arXiv preprint arXiv:2611.26405},
   year    = {2026}
 }
 ```
